@@ -1,96 +1,97 @@
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class Calculator {
     private RationalNumber result;
     private String input;
     Queue<String> outputQueue = new LinkedList<>();
+    Stack<Operator> operatorsStack = new Stack<>();
 
-    private void cleanup(){
-        outputQueue = new LinkedList<>();
+    public void cleanup(){
+        outputQueue.clear();
+        operatorsStack.clear();
     }
 
-    private Boolean hasHigherPriority(char firstOperator,char secondOperator){
-        return priority(firstOperator) - priority(secondOperator) > 0;
+    public Boolean readAndParseInput(String line){
+        if ((this.input = line).isEmpty())
+            return false;
+
+        return readInputAndModifyInfixToPostfix(this.removeWhiteSpace(line));
     }
 
-    private int priority(char operator) {
-        return switch (operator) {
-            case '+', '-' -> 1;
-            case '/', '*' -> 2;
-            default -> -1;
-        };
+    private String removeWhiteSpace(String line) {
+        return line.replaceAll("\\s+", "");
     }
 
-    public void readInputAndModifyInfixToPostfix(BufferedReader reader) throws IOException {
-        StringBuilder content = new StringBuilder();
-        Stack<Character> operatorsStack = new Stack<>();
+    public Boolean readInputAndModifyInfixToPostfix(String line){
         StringBuilder currentNumber = new StringBuilder();
         int value;
-        boolean isNumber = false;
+        boolean stillNumber = false;
 
-        while ((value = reader.read()) != -1) {
-            if (Character.isWhitespace(value)){
-                continue;
-            }
+        for (int i = 0, lineSize = line.length(); i < lineSize; i++) {
+            value = line.charAt(i);
 
-            if (!checkValue((char) value)){
-                throw new IllegalArgumentException("This ->" + value + "<- cannot be accepted.");
-            }
-
-            if (value >= '0' && value <='9'){
-                currentNumber.append((char) value);
-                isNumber = true;
-            } else if (isNumber) {
-                outputQueue.add(currentNumber.toString());
-                currentNumber = new StringBuilder();
-                isNumber = false;
-            }
-
-            if (isOperator(value)){
-                while (!operatorsStack.empty() &&
-                        hasHigherPriority(operatorsStack.peek(), (char) value)){
-
-                    outputQueue.add(String.valueOf(operatorsStack.pop()));
-                }
-
-                operatorsStack.push((char) value);
-            }
-
-            if (value == '('){
-                operatorsStack.add((char) value);
-            }
-
-            if (value == ')'){
-                while (operatorsStack.peek() != '('){
-                    outputQueue.add(String.valueOf(operatorsStack.pop()));
-                }
-                operatorsStack.pop();
-            }
-
-            content.append((char) value);
+            if (this.isNumber(value))
+                stillNumber=this.valueIsNumber(value, currentNumber);
+            else
+                stillNumber=this.valueIsOperatorOrParentheses((char) value, stillNumber, currentNumber);
         }
 
-        if (!currentNumber.isEmpty()){
+        this.addAllToOutputQueue(currentNumber);
+        return true;
+    }
+
+    private boolean valueIsOperatorOrParentheses(char value, boolean isNumber, StringBuilder currentNumber) {
+        if (isNumber) {
             outputQueue.add(currentNumber.toString());
+            currentNumber.setLength(0);
         }
 
-        while (!operatorsStack.empty()){
-            outputQueue.add(String.valueOf(operatorsStack.pop()));
-        }
+        if (isOperator(value))
+            this.addOperatorToStack(Operator.getTypeFromChar(value));
 
-        this.input = content.toString();
+        if (value == '(')
+            operatorsStack.add(Operator.LEFT_PARENTHESIS);
+
+        if (value == ')') this.addAllUntilLeftParentheses();
+
+        return false;
+    }
+
+    private boolean isNumber(int value) {
+        return value >= '0' && value <= '9';
+    }
+
+    private void addAllToOutputQueue(StringBuilder currentNumber) {
+        if (!currentNumber.isEmpty())
+            outputQueue.add(currentNumber.toString());
+
+        while (!operatorsStack.empty())
+            outputQueue.add(String.valueOf(operatorsStack.pop().getOperator()));
+    }
+
+    private void addAllUntilLeftParentheses() {
+        while (operatorsStack.peek() != Operator.LEFT_PARENTHESIS)
+            outputQueue.add(String.valueOf(operatorsStack.pop().getOperator()));
+
+        operatorsStack.pop();
+    }
+
+    private void addOperatorToStack(Operator operator) {
+        while (!operatorsStack.empty() &&
+                operator.hasHigherPriority(operatorsStack.peek()))
+            outputQueue.add(String.valueOf(operatorsStack.pop().getOperator()));
+
+        operatorsStack.push(operator);
+    }
+
+    private boolean valueIsNumber(int value, StringBuilder currentNumber) {
+        currentNumber.append((char) value);
+        return true;
     }
 
     private boolean isOperator(int value) {
         return value == '/' || value == '*' || value == '+' || value == '-';
-    }
-
-    private boolean checkValue(char value) {
-        return value == '/' || value == '*' || value == '('
-                || value == ')' || value == '+' || value == '-'
-                || (value >= '0' && value <= '9');
     }
 
     @Override
@@ -100,13 +101,15 @@ public class Calculator {
 
     public void calculate() {
         Stack<RationalNumber> numberStack = new Stack<>();
+
         while (!this.outputQueue.isEmpty()){
             String ch = outputQueue.remove();
             try{
                 Double number = Double.valueOf(ch);
                 numberStack.add(new RationalNumber(number));
             } catch (NumberFormatException e){
-                numberStack.add(evaluate(ch, numberStack.pop(), numberStack.pop()));
+                numberStack.add(Operator.getTypeFromChar(ch.charAt(0))
+                        .operation(numberStack.pop(), numberStack.pop()));
             }
         }
 
@@ -114,42 +117,37 @@ public class Calculator {
         result = numberStack.pop().simplify();
     }
 
-    private RationalNumber evaluate(String operator, RationalNumber firstNumber, RationalNumber secondNumber) {
-        return switch (operator){
-            case "*" -> firstNumber.multiply(secondNumber);
-            case "/" -> secondNumber.divide(firstNumber);
-            case "+" -> firstNumber.add(secondNumber);
-            case "-" -> secondNumber.subtract(firstNumber);
-            default -> throw new IllegalArgumentException("This " + operator + " cannot be used.");
-        };
-    }
-
     public void printResult() {
         this.cleanup();
         System.out.printf("%s = %s\n", this.input, this.result);
     }
 
-    public String checkInput() throws RuntimeException {
-        if (this.input.matches(".*\\*\\*.*") ||
-                this.input.matches(".*//.*") ||
-                this.input.matches(".*-\\+.*") ||
-                this.input.matches(".*\\+\\*.*") ||
-                this.input.matches(".*/\\*.*") ||
-                this.input.matches(".*\\*/.*") ||
-                this.input.matches(".*-\\*.*") ||
-                this.input.matches(".*\\+\\+.*")){
-            throw new RuntimeException("//, **, -+, +*, /*, */, -*, ++ patterns cannot be accepted." +
-                    " Provide input: " + input);
-        }
+    private Pattern getInvalidPattern() {
+        return Pattern.compile(
+                "(\\*\\*)|(//)|" +
+                "(-\\+)|(\\+\\*)|" +
+                "(/\\*)|(\\*/)|" +
+                "(-\\*)|(\\+\\+)");
+    }
 
-        if (this.input.matches(".*\\*-.*") ||
-                this.input.matches(".*\\+-.*") ||
-                this.input.matches(".*--.*") ||
-                this.input.matches(".*/-.*")){
-            throw new RuntimeException("*-, +-, /- and -- is not supported yet." +
-                    " Provide input: " + input);
-        }
+    private Pattern getUnsupportedPatterns(){
+        return Pattern.compile(
+                "(\\*-)|(\\+-)" +
+                "(--)|(/-)");
+    }
 
-        return "";
+    public void checkPattern(Scanner scanner) {
+        if (scanner.findInLine(this.getInvalidPattern()) != null)
+            throw new IllegalArgumentException("//, **, -+, +*, /*, */, -*, ++ patterns cannot be accepted.");
+
+        if (scanner.findInLine(this.getUnsupportedPatterns()) != null)
+            throw new IllegalArgumentException("*-, +-, /- and -- is not supported yet.");
+
+        if (scanner.findInLine(this.getInvalidCharacterPatterns()) != null)
+            throw new IllegalArgumentException("Valid input are +, -, numbers, *, / and parenthesis");
+    }
+
+    private Pattern getInvalidCharacterPatterns() {
+        return Pattern.compile("[^\\d/\\-+*()]");
     }
 }

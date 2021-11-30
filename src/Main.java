@@ -1,44 +1,44 @@
-import java.io.*;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.NoSuchElementException;
+import java.util.Scanner;
 
 public class Main {
-    public static void main(String[] args) throws IOException {
-        List<String> mathExpressions = Stream.of(
-                        "5+ 2",
-                        "4+3*3",
-                        "4*2+(3+41*1)",
-                        "2*11+((2+1)*2+1)",
-                        "2/11+((2+1)/2+1)",
-                        "(2+1)-4",
-                        "2*(3/7+2/14)",
-                        "2/3+5*(3/12-5/5)",
-                        "2--1",
-                        "2++2")
-                .collect(Collectors.toList());
+
+    public static void main(String[] args){
+        Scanner scanner = new Scanner(System.in);
+        readMathExpression(scanner);
+    }
+
+    private static void readMathExpression(Scanner scanner){
         Calculator calculator = new Calculator();
 
-        mathExpressions.forEach(m -> {
-            Reader inputString = new StringReader(m);
-            BufferedReader reader = new BufferedReader(inputString);
+        while (true){
+            System.out.println("Zadejte matematicky vyraz: ");
 
-            try {
-                calculator.readInputAndModifyInfixToPostfix(reader);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
+            if (!readInputAndCheck(calculator, scanner))
+                continue;
 
-            try {
-                System.out.print(calculator.checkInput());
-            } catch (RuntimeException e) {
-                e.printStackTrace();
+            try{
+                if (!calculator.readAndParseInput(scanner.nextLine()))
+                    return;
+            }catch (NoSuchElementException e){
                 return;
             }
 
             calculator.calculate();
             calculator.printResult();
-        });
+        }
+    }
+
+    private static boolean readInputAndCheck(Calculator calculator, Scanner scanner) {
+        try {
+            calculator.checkPattern(scanner);
+        }catch (IllegalArgumentException e){
+            System.out.println(e);
+            calculator.cleanup();
+            scanner.next();
+            return false;
+        }
+
+        return true;
     }
 }
