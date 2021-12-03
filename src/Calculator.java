@@ -132,7 +132,7 @@ public class Calculator {
 
     private Pattern getUnsupportedPatterns(){
         return Pattern.compile(
-                "(\\*-)|(\\+-)" +
+                "(\\*-)|(\\+-)|" +
                 "(--)|(/-)");
     }
 

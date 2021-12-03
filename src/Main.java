@@ -4,11 +4,11 @@ import java.util.Scanner;
 public class Main {
 
     public static void main(String[] args){
-        Scanner scanner = new Scanner(System.in);
-        readMathExpression(scanner);
+        readMathExpression();
     }
 
-    private static void readMathExpression(Scanner scanner){
+    private static void readMathExpression(){
+        Scanner scanner = new Scanner(System.in);
         Calculator calculator = new Calculator();
 
         while (true){
@@ -19,7 +19,7 @@ public class Main {
 
             try{
                 if (!calculator.readAndParseInput(scanner.nextLine()))
-                    return;
+                    continue;
             }catch (NoSuchElementException e){
                 return;
             }
@@ -33,9 +33,9 @@ public class Main {
         try {
             calculator.checkPattern(scanner);
         }catch (IllegalArgumentException e){
-            System.out.println(e);
+            System.out.println(e.getMessage());
             calculator.cleanup();
-            scanner.next();
+            scanner.nextLine();
             return false;
         }
 
