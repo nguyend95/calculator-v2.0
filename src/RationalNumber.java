@@ -1,7 +1,5 @@
 public class RationalNumber {
-//    Jmenovatel
     private Double numerator;
-//    Citatel
     private Double denominator;
 
     public RationalNumber(Double number) {
@@ -74,7 +72,6 @@ public class RationalNumber {
         this.denominator /= lcm;
         this.numerator /= lcm;
 
-//        presun zaporne cislo do jmenovatele
         if (this.denominator < 0){
             this.numerator *= -1.0;
             this.denominator *= -1.0;

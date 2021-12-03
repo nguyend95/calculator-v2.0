@@ -122,32 +122,14 @@ public class Calculator {
         System.out.printf("%s = %s\n", this.input, this.result);
     }
 
-    private Pattern getInvalidPattern() {
-        return Pattern.compile(
-                "(\\*\\*)|(//)|" +
-                "(-\\+)|(\\+\\*)|" +
-                "(/\\*)|(\\*/)|" +
-                "(-\\*)|(\\+\\+)");
-    }
-
-    private Pattern getUnsupportedPatterns(){
-        return Pattern.compile(
-                "(\\*-)|(\\+-)|" +
-                "(--)|(/-)");
-    }
-
     public void checkPattern(Scanner scanner) {
-        if (scanner.findInLine(this.getInvalidPattern()) != null)
+        if (scanner.findInLine(Pattern.compile(CustomPattern.INVALID_COMBINATION.getPattern())) != null)
             throw new IllegalArgumentException("//, **, -+, +*, /*, */, -*, ++ patterns cannot be accepted.");
 
-        if (scanner.findInLine(this.getUnsupportedPatterns()) != null)
+        if (scanner.findInLine(Pattern.compile(CustomPattern.UNSUPPORTED.getPattern())) != null)
             throw new IllegalArgumentException("*-, +-, /- and -- is not supported yet.");
 
-        if (scanner.findInLine(this.getInvalidCharacterPatterns()) != null)
+        if (scanner.findInLine(Pattern.compile(CustomPattern.INVALID_CHARACTER.getPattern())) != null)
             throw new IllegalArgumentException("Valid inputs are +, -, numbers, *, / and parenthesis");
-    }
-
-    private Pattern getInvalidCharacterPatterns() {
-        return Pattern.compile("[^\\d/\\-+*()]");
     }
 }
