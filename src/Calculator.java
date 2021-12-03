@@ -31,10 +31,10 @@ public class Calculator {
         for (int i = 0, lineSize = line.length(); i < lineSize; i++) {
             value = line.charAt(i);
 
-            if (this.isNumber(value))
-                stillNumber=this.valueIsNumber(value, currentNumber);
-            else
+            if (Operator.isOperator(value))
                 stillNumber=this.valueIsOperatorOrParentheses((char) value, stillNumber, currentNumber);
+            else
+                stillNumber=this.valueIsNumber(value, currentNumber);
         }
 
         this.addAllToOutputQueue(currentNumber);
@@ -47,19 +47,15 @@ public class Calculator {
             currentNumber.setLength(0);
         }
 
-        if (isOperator(value))
+        if (!Operator.isParenthesis(value))
             this.addOperatorToStack(Operator.getTypeFromChar(value));
 
-        if (value == '(')
+        if (Operator.LEFT_PARENTHESIS.isEqual(value))
             operatorsStack.add(Operator.LEFT_PARENTHESIS);
 
-        if (value == ')') this.addAllUntilLeftParentheses();
+        if (Operator.RIGHT_PARENTHESIS.isEqual(value)) this.addAllUntilLeftParentheses();
 
         return false;
-    }
-
-    private boolean isNumber(int value) {
-        return value >= '0' && value <= '9';
     }
 
     private void addAllToOutputQueue(StringBuilder currentNumber) {
@@ -88,10 +84,6 @@ public class Calculator {
     private boolean valueIsNumber(int value, StringBuilder currentNumber) {
         currentNumber.append((char) value);
         return true;
-    }
-
-    private boolean isOperator(int value) {
-        return value == '/' || value == '*' || value == '+' || value == '-';
     }
 
     @Override

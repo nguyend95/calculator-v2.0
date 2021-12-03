@@ -30,6 +30,12 @@ public enum Operator{
         RationalNumber operation(RationalNumber firstNumber, RationalNumber secondNumber) {
             return null;
         }
+    },
+    RIGHT_PARENTHESIS(-1, ')'){
+        @Override
+        RationalNumber operation(RationalNumber firstNumber, RationalNumber secondNumber) {
+            return null;
+        }
     };
 
     private final int priority;
@@ -38,6 +44,11 @@ public enum Operator{
     Operator(final int priority, char operator){
         this.priority = priority;
         this.operator = operator;
+    }
+
+    public static boolean isOperator(int value) {
+        return Arrays.stream(Operator.values())
+                .anyMatch(operator -> operator.getOperator() == value);
     }
 
     public int getPriority() {
@@ -54,8 +65,17 @@ public enum Operator{
         ).findAny().orElseThrow(IllegalArgumentException::new);
     }
 
+    public static boolean isParenthesis(char value){
+        return LEFT_PARENTHESIS.isEqual(value)
+                || RIGHT_PARENTHESIS.isEqual(value);
+    }
+
     public boolean hasHigherPriority(Operator other){
         return other.getPriority() - this.priority > 0;
+    }
+
+    protected boolean isEqual(char value){
+        return value == this.getOperator();
     }
 
     abstract RationalNumber operation(RationalNumber firstNumber, RationalNumber secondNumber);
