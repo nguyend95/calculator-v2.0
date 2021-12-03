@@ -16,7 +16,6 @@ public class Main {
 
             if (!readInputAndCheck(calculator, scanner))
                 continue;
-
             try{
                 if (!calculator.readAndParseInput(scanner.nextLine()))
                     continue;

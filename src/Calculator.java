@@ -144,7 +144,7 @@ public class Calculator {
             throw new IllegalArgumentException("*-, +-, /- and -- is not supported yet.");
 
         if (scanner.findInLine(this.getInvalidCharacterPatterns()) != null)
-            throw new IllegalArgumentException("Valid input are +, -, numbers, *, / and parenthesis");
+            throw new IllegalArgumentException("Valid inputs are +, -, numbers, *, / and parenthesis");
     }
 
     private Pattern getInvalidCharacterPatterns() {
