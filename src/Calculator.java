@@ -1,3 +1,5 @@
+import jdk.jshell.spi.ExecutionControl;
+
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -12,7 +14,7 @@ public class Calculator {
         operatorsStack.clear();
     }
 
-    public Boolean readAndParseInput(String line){
+    public Boolean readAndParseInput(String line) throws ExecutionControl.NotImplementedException {
         if ((this.input = line).isEmpty())
             return false;
 
@@ -23,44 +25,59 @@ public class Calculator {
         return line.replaceAll("\\s+", "");
     }
 
-    public Boolean readInputAndModifyInfixToPostfix(String line){
-        StringBuilder currentNumber = new StringBuilder();
+    public Boolean readInputAndModifyInfixToPostfix(String line) throws ExecutionControl.NotImplementedException {
+        InputHelper inputHelper = new InputHelper();
         int value;
-        boolean stillNumber = false;
 
         for (int i = 0, lineSize = line.length(); i < lineSize; i++) {
             value = line.charAt(i);
 
             if (Operator.isOperator(value))
-                stillNumber=this.valueIsOperatorOrParentheses((char) value, stillNumber, currentNumber);
+                this.valueIsOperatorOrParentheses((char) value, inputHelper);
             else
-                stillNumber=this.valueIsNumber(value, currentNumber);
+                this.valueIsNumber(value, inputHelper);
         }
 
-        this.addAllToOutputQueue(currentNumber);
+        this.addAllToOutputQueue(inputHelper);
         return true;
     }
 
-    private boolean valueIsOperatorOrParentheses(char value, boolean isNumber, StringBuilder currentNumber) {
-        if (isNumber) {
-            outputQueue.add(currentNumber.toString());
-            currentNumber.setLength(0);
+    private void valueIsOperatorOrParentheses(char value, InputHelper inputHelper) throws ExecutionControl.NotImplementedException {
+        if (inputHelper.isStillNumber()) {
+            this.addNumberToQueue(inputHelper);
+            inputHelper.setStillNumber(false);
         }
 
-        if (!Operator.isParenthesis(value))
-            this.addOperatorToStack(Operator.getTypeFromChar(value));
+        if (!Operator.isParenthesis(value)) {
+            this.addOperatorToStack(Operator.getTypeFromChar(value), inputHelper);
+            return;
+        }
 
         if (Operator.LEFT_PARENTHESIS.isEqual(value))
-            operatorsStack.add(Operator.LEFT_PARENTHESIS);
+            this.addLeftParenthesisToStack(inputHelper);
 
         if (Operator.RIGHT_PARENTHESIS.isEqual(value)) this.addAllUntilLeftParentheses();
 
-        return false;
+        inputHelper.setPreviousOperator(Operator.getTypeFromChar(value));
     }
 
-    private void addAllToOutputQueue(StringBuilder currentNumber) {
-        if (!currentNumber.isEmpty())
-            outputQueue.add(currentNumber.toString());
+    private void addLeftParenthesisToStack(InputHelper inputHelper) {
+        if (inputHelper.getIsPositive().isPresent()) {
+            operatorsStack.push(inputHelper.getRightOperator());
+            inputHelper.resetIsPositive();
+        }
+
+        operatorsStack.push(Operator.LEFT_PARENTHESIS);
+    }
+
+    private void addNumberToQueue(InputHelper inputHelper) {
+        outputQueue.add(inputHelper.getCurrentNumber());
+        inputHelper.resetCurrentNumber();
+    }
+
+    private void addAllToOutputQueue(InputHelper inputHelper) {
+        if (!inputHelper.getCurrentNumber().isEmpty())
+            outputQueue.add(inputHelper.getCurrentNumber());
 
         while (!operatorsStack.empty())
             outputQueue.add(String.valueOf(operatorsStack.pop().getOperator()));
@@ -73,17 +90,43 @@ public class Calculator {
         operatorsStack.pop();
     }
 
-    private void addOperatorToStack(Operator operator) {
+    private void addOperatorToStack(Operator operator, InputHelper inputHelper) throws ExecutionControl.NotImplementedException {
+        if (Operator.PLUS == operator || Operator.MINUS == operator){
+            inputHelper.setIsPositive(operator);
+            return;
+        }
+
+        inputHelper.setPreviousOperator(operator);
+        this.addOperatorWithHigherPriorityToStack(operator);
+    }
+
+    private void addOperatorWithHigherPriorityToStack(Operator operator) {
         while (!operatorsStack.empty() &&
                 operator.hasHigherPriority(operatorsStack.peek()))
             outputQueue.add(String.valueOf(operatorsStack.pop().getOperator()));
-
         operatorsStack.push(operator);
     }
 
-    private boolean valueIsNumber(int value, StringBuilder currentNumber) {
-        currentNumber.append((char) value);
-        return true;
+    private void valueIsNumber(int value, InputHelper inputHelper) {
+        this.addSignToNumber(inputHelper);
+        inputHelper.currentNumberAppend((char) value);
+        inputHelper.setStillNumber(true);
+        inputHelper.resetPreviousOperator();
+    }
+
+    private void addSignToNumber(InputHelper inputHelper) {
+        if (inputHelper.getIsPositive().isPresent()){
+            inputHelper.currentNumberAppend(inputHelper.getRightOperator().getOperator());
+            inputHelper.resetIsPositive();
+            this.addOperatorToStack(inputHelper);
+        }
+    }
+
+    private void addOperatorToStack(InputHelper inputHelper) {
+        if (inputHelper.getPreviousOperator().isEmpty())
+            this.addOperatorWithHigherPriorityToStack(Operator.PLUS);
+        else if (!inputHelper.getPreviousOperator().get().isParenthesis())
+            this.addOperatorWithHigherPriorityToStack(inputHelper.getPreviousOperator().get());
     }
 
     @Override
@@ -91,14 +134,13 @@ public class Calculator {
         return String.format("%s = %s\n", this.input, this.result.toString());
     }
 
-    public void calculate() {
+    public void calculate() throws ExecutionControl.NotImplementedException {
         Stack<RationalNumber> numberStack = new Stack<>();
 
         while (!this.outputQueue.isEmpty()){
             String ch = outputQueue.remove();
             try{
-                Double number = Double.valueOf(ch);
-                numberStack.add(new RationalNumber(number));
+                numberStack.add(new RationalNumber(Double.valueOf(ch)));
             } catch (NumberFormatException e){
                 numberStack.add(Operator.getTypeFromChar(ch.charAt(0))
                         .operation(numberStack.pop(), numberStack.pop()));

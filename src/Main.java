@@ -1,3 +1,5 @@
+import jdk.jshell.spi.ExecutionControl;
+
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
@@ -19,11 +21,14 @@ public class Main {
             try{
                 if (!calculator.readAndParseInput(scanner.nextLine()))
                     continue;
+                calculator.calculate();
             }catch (NoSuchElementException e){
                 return;
+            }catch (ExecutionControl.NotImplementedException e){
+                System.out.println("Unexpected error " + e.getMessage());
+                continue;
             }
 
-            calculator.calculate();
             calculator.printResult();
         }
     }

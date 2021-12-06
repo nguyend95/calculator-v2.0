@@ -1,4 +1,7 @@
+import jdk.jshell.spi.ExecutionControl;
+
 import java.util.Arrays;
+import java.util.Optional;
 
 public enum Operator{
     MINUS (1, '-'){
@@ -6,11 +9,31 @@ public enum Operator{
         RationalNumber operation(RationalNumber firstNumber, RationalNumber secondNumber){
             return secondNumber.subtract(firstNumber);
         }
+
+        @Override
+        public Optional<Boolean> combinationWithPlusMinus(Boolean isPositive){
+            return Optional.of(!isPositive);
+        }
+
+        @Override
+        public boolean isParenthesis() {
+            return false;
+        }
     },
     PLUS (1, '+'){
         @Override
         RationalNumber operation(RationalNumber firstNumber, RationalNumber secondNumber){
             return firstNumber.add(secondNumber);
+        }
+
+        @Override
+        public Optional<Boolean> combinationWithPlusMinus(Boolean isPositive) {
+            return Optional.of(isPositive);
+        }
+
+        @Override
+        public boolean isParenthesis() {
+            return false;
         }
     },
     DIVISION (2, '/'){
@@ -18,23 +41,63 @@ public enum Operator{
         RationalNumber operation(RationalNumber firstNumber, RationalNumber secondNumber) {
             return secondNumber.divide(firstNumber);
         }
+
+        @Override
+        public Optional<Boolean> combinationWithPlusMinus(Boolean isPositive) throws ExecutionControl.NotImplementedException {
+            throw new ExecutionControl.NotImplementedException("Operator '/' does not support combinationWithPlusMinus's method");
+        }
+
+        @Override
+        public boolean isParenthesis() {
+            return false;
+        }
     },
     MULTIPLICATION (2, '*'){
         @Override
         RationalNumber operation(RationalNumber firstNumber, RationalNumber secondNumber) {
             return secondNumber.multiply(firstNumber);
         }
+
+        @Override
+        public Optional<Boolean> combinationWithPlusMinus(Boolean isPositive) throws ExecutionControl.NotImplementedException {
+            throw new ExecutionControl.NotImplementedException("Operator '*' does not support combinationWithPlusMinus's method");
+        }
+
+        @Override
+        public boolean isParenthesis() {
+            return false;
+        }
     },
     LEFT_PARENTHESIS (-1, '('){
         @Override
-        RationalNumber operation(RationalNumber firstNumber, RationalNumber secondNumber) {
-            return null;
+        RationalNumber operation(RationalNumber firstNumber, RationalNumber secondNumber) throws ExecutionControl.NotImplementedException {
+            throw new ExecutionControl.NotImplementedException("Operator '(' is not supported for operation");
+        }
+
+        @Override
+        public Optional<Boolean> combinationWithPlusMinus(Boolean isPositive) throws ExecutionControl.NotImplementedException {
+            throw new ExecutionControl.NotImplementedException("Operator '(' does not support combinationWithPlusMinus's method");
+        }
+
+        @Override
+        public boolean isParenthesis() {
+            return true;
         }
     },
     RIGHT_PARENTHESIS(-1, ')'){
         @Override
-        RationalNumber operation(RationalNumber firstNumber, RationalNumber secondNumber) {
-            return null;
+        RationalNumber operation(RationalNumber firstNumber, RationalNumber secondNumber) throws ExecutionControl.NotImplementedException {
+            throw new ExecutionControl.NotImplementedException("Operator ')' does not support operation's method");
+        }
+
+        @Override
+        public Optional<Boolean> combinationWithPlusMinus(Boolean isPositive) throws ExecutionControl.NotImplementedException {
+            throw new ExecutionControl.NotImplementedException("Operator ')' does not support combinationWithPlusMinus's method");
+        }
+
+        @Override
+        public boolean isParenthesis() {
+            return true;
         }
     };
 
@@ -78,5 +141,9 @@ public enum Operator{
         return value == this.getOperator();
     }
 
-    abstract RationalNumber operation(RationalNumber firstNumber, RationalNumber secondNumber);
+    abstract RationalNumber operation(RationalNumber firstNumber, RationalNumber secondNumber) throws ExecutionControl.NotImplementedException;
+
+    public abstract Optional<Boolean> combinationWithPlusMinus(Boolean isPositive) throws ExecutionControl.NotImplementedException;
+
+    public abstract boolean isParenthesis();
 }

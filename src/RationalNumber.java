@@ -43,7 +43,6 @@ public class RationalNumber {
         this.numerator = lcm / this.denominator * this.numerator +
                          lcm / other.getDenominator() * other.getNumerator();
         this.denominator = lcm;
-
         this.simplify();
 
         return this;
