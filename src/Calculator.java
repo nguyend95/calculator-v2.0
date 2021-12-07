@@ -158,12 +158,12 @@ public class Calculator {
 
     public void checkPattern(Scanner scanner) {
         if (scanner.findInLine(Pattern.compile(CustomPattern.INVALID_COMBINATION.getPattern())) != null)
-            throw new IllegalArgumentException("//, **, -+, +*, /*, */, -*, ++ patterns cannot be accepted.");
+            throw new IllegalArgumentException(CustomPattern.INVALID_COMBINATION.getText());
 
         if (scanner.findInLine(Pattern.compile(CustomPattern.UNSUPPORTED.getPattern())) != null)
-            throw new IllegalArgumentException("*-, +-, /- and -- is not supported yet.");
+            throw new IllegalArgumentException(CustomPattern.UNSUPPORTED.getText());
 
         if (scanner.findInLine(Pattern.compile(CustomPattern.INVALID_CHARACTER.getPattern())) != null)
-            throw new IllegalArgumentException("Valid inputs are +, -, numbers, *, / and parenthesis");
+            throw new IllegalArgumentException(CustomPattern.INVALID_CHARACTER.getText());
     }
 }
